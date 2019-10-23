@@ -1,0 +1,43 @@
+from bs4 import BeautifulSoup
+import urllib.request
+import csv
+import pandas as pd
+import requests
+from requests import get
+urlpage = 'https://www.cargurus.com/Cars/inventorylisting/viewDetailsFilterViewInventoryListing.action?sourceContext=carGurusHomePageModel&newSearchFromOverviewPage=true&inventorySearchWidgetType=AUTO&entitySelectingHelper.selectedEntity=d2244&entitySelectingHelper.selectedEntity2=&zip=34638&distance=100&searchChanged=true&modelChanged=false&filtersModified=true'
+page = urllib.request.urlopen(urlpage)
+soup = BeautifulSoup(page, 'html.parser')
+Car_Page = soup.find(id = 'mainSearchResultsContainer')
+car_titles = []
+Title = Car_Page.find_all(itemprop = 'name')
+for i in Title:
+    car_titles.append(i.get_text().strip('\n'))
+prices = []
+Price = Car_Page.find_all(itemprop = 'price')
+for i in Price:
+    prices.append(i.get_text().strip('\n'))
+p = soup.find_all('p')
+lists = list(p)
+loc_mile = lists[8:52]
+dicts = { i : loc_mile[i] for i in range(0, len(loc_mile) ) }
+num_to_del = []
+sum = 2
+for i in range(14):
+    num_to_del.append(sum)
+    sum = sum + 3
+text = []
+for i in p:
+    text.append(i.get_text().strip('\n'))
+text_ = text[7:52]
+newList = [x for i, x in enumerate(text_) if i%3 !=0]
+Location = [x for i, x in enumerate(newList) if i%2 !=0]
+Mileage = [x for i, x in enumerate(newList) if i%2 !=1]
+loc = []
+for i in (Location):
+    loc.append(str(i).replace('Location: ', ''))
+mile = []
+for i in (Mileage):
+    mile.append(str(i).replace('Mileage: ', ''))
+Car_Gurus_BMW = pd.DataFrame({'Car Name': car_titles, 'Price':prices, 'Location': loc, 'Mileage': mile})
+Car_Gurus_BMW['Mileage'] =  Car_Gurus_BMW['Mileage'].str.replace(",", "").astype(int)
+Car_Gurus_BMW.set_index('Car Name', inplace = True)
